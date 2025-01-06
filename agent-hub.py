@@ -170,8 +170,6 @@ selected_roles = st.multiselect(
     ["system", "user", "assistant", "tool"],
     default=["system", "user", "assistant", "tool"]
 )
-selected_roles_lower = [role.lower() for role in selected_roles]
-
 # Generate and display the graph and filter by role inside the container
 if show_graph:
     with st.container():
@@ -194,7 +192,14 @@ st.header("Execution History")
 
 simplify_assistant_messages = st.checkbox("Simplify Assistant Messages with Tool Calls", value=True) # Checked by default
 
+# Add functionality for filtering messages by role
 selected_roles_lower = []
+selected_roles = st.multiselect(
+    "Filter by Role",
+    ["system", "user", "assistant", "tool"],
+    default=["system", "user", "assistant", "tool"]
+)
+selected_roles_lower = [role.lower() for role in selected_roles]
 
 # Filter history based on selected roles
 filtered_history = []
