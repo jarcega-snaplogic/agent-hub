@@ -7,11 +7,12 @@ from pymongo import MongoClient
 # Configure the page to use wide layout
 st.set_page_config(layout="wide")
 
-selected_session = None
+if 'selected_session' not in st.session_state:
+    st.session_state.selected_session = None
 
 st.title("LLM Agent Hub")
-if selected_session:
-    st.markdown(f"Selected Session: {selected_session}")
+if st.session_state.selected_session:
+    st.markdown(f"Selected Session: {st.session_state.selected_session}")
 
 # MongoDB connection string
 MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
@@ -34,14 +35,13 @@ else:
     st.sidebar.header("Session Selection")
     
     # Display session IDs in a table-like format
-    selected_session = None
     for session_id in all_sessions:
         if st.sidebar.button(session_id):
-            selected_session = session_id
+            st.session_state.selected_session = session_id
     
-    if selected_session:
+    if st.session_state.selected_session:
         # Fetch execution history from MongoDB for the selected session
-        history = list(history_collection.find({"sessionId": selected_session}).limit(1))
+        history = list(history_collection.find({"sessionId": st.session_state.selected_session}).limit(1))
         if history:
             history = history[0].get("messages", [])
         else:
