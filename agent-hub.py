@@ -165,15 +165,6 @@ if st.session_state.selected_session:
         )
     st.sidebar.markdown("[Graphviz Online Viewer](https://dreampuf.github.io/GraphvizOnline/)")
     
-    # Common filter control for both graph and history
-    selected_roles = st.multiselect(
-        "Filter by Role",
-        ["system", "user", "assistant", "tool"],
-        default=st.session_state.filter_roles,
-        key="filter_roles",
-        on_change=None
-    )
-    
     # Graph section
     st.header("Agent Flow Graph")
     show_graph = st.checkbox("Show Graph", value=False)
@@ -198,6 +189,16 @@ if st.session_state.selected_session:
 
     # Execution History section
     st.header("Execution History")
+    
+    # Common filter control for both graph and history
+    selected_roles = st.multiselect(
+        "Filter by Role",
+        ["system", "user", "assistant", "tool"],
+        default=st.session_state.filter_roles,
+        key="filter_roles",
+        on_change=None
+    )
+    
     simplify_assistant_messages = st.checkbox("Simplify Assistant Messages with Tool Calls", value=True)
 
     # Find tool names for TOOL messages
