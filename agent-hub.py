@@ -14,6 +14,8 @@ if 'filter_roles' not in st.session_state:
     st.session_state.filter_roles = ["system", "user", "assistant", "tool"]
 
 st.title("LLM Agent Hub")
+if st.button("Show Start Command"):
+    st.markdown("To start the app, run `streamlit run agent-hub.py` in your terminal.")
 
 # MongoDB connection string
 MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
