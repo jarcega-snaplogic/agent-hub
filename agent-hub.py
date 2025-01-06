@@ -8,6 +8,8 @@ from pymongo import MongoClient
 st.set_page_config(layout="wide")
 
 st.title("LLM Agent Hub")
+if selected_session:
+    st.markdown(f"Selected Session: {selected_session}")
 
 # MongoDB connection string
 MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
@@ -26,32 +28,22 @@ else:
     # Initialize session selection
     session_start_index = 0
     session_end_index = 10
-    
     # Sidebar for session selection
     st.sidebar.header("Session Selection")
     
-    # Navigation buttons
-    col1, col2 = st.sidebar.columns(2)
-    if col1.button("Previous 10"):
-        session_start_index = max(0, session_start_index - 10)
-        session_end_index = max(10, session_end_index - 10)
-    if col2.button("Next 10"):
-        session_start_index = min(len(all_sessions), session_start_index + 10)
-        session_end_index = min(len(all_sessions), session_end_index + 10)
+    # Display session IDs in a table-like format
+    selected_session = None
+    for session_id in all_sessions:
+        if st.sidebar.button(session_id):
+            selected_session = session_id
     
-    # Display session IDs in a selectbox
-    current_sessions = all_sessions[session_start_index:session_end_index]
-    selected_session = st.sidebar.selectbox(
-        "Select Session",
-        current_sessions,
-        index=0,
-        format_func=lambda x: f"Session ID: {x}"
-    )
-    
-    # Fetch execution history from MongoDB for the selected session
-    history = list(history_collection.find({"sessionId": selected_session}).limit(1))
-    if history:
-        history = history[0].get("messages", [])
+    if selected_session:
+        # Fetch execution history from MongoDB for the selected session
+        history = list(history_collection.find({"sessionId": selected_session}).limit(1))
+        if history:
+            history = history[0].get("messages", [])
+        else:
+            history = []
     else:
         history = []
 
