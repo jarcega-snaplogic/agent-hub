@@ -7,6 +7,8 @@ from pymongo import MongoClient
 # Configure the page to use wide layout
 st.set_page_config(layout="wide")
 
+selected_session = None
+
 st.title("LLM Agent Hub")
 if selected_session:
     st.markdown(f"Selected Session: {selected_session}")
