@@ -19,8 +19,6 @@ def init_filter_roles():
 init_filter_roles()
 
 st.title("LLM Agent Hub")
-if st.button("Show Start Command"):
-    st.markdown("To start the app, run `streamlit run agent-hub.py` in your terminal.")
 
 # MongoDB connection string
 MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
