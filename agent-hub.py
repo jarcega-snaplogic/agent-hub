@@ -14,11 +14,15 @@ MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb
 
 # Initialize MongoDB client
 client = MongoClient(MONGO_URI)
-db = client.get_database("taletime")
-history_collection = db.get_collection("history")
+db = client.get_database("audiobooks")
+history_collection = db.get_collection("Log")
 
 # Fetch execution history from MongoDB
-history = list(history_collection.find())
+history = list(history_collection.find().limit(1))
+if history:
+    history = history[0].get("messages", [])
+else:
+    history = []
 
 @st.cache_data
 def generate_graph(history, scale=1.0):
