@@ -194,6 +194,8 @@ st.header("Execution History")
 
 simplify_assistant_messages = st.checkbox("Simplify Assistant Messages with Tool Calls", value=True) # Checked by default
 
+selected_roles_lower = []
+
 # Filter history based on selected roles
 filtered_history = []
 for message in history:
