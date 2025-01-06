@@ -22,6 +22,8 @@ init_filter_roles()
 
 st.title("LLM Agent Hub")
 
+st.markdown("To start the app, run `streamlit run agent-hub.py` in your terminal.")
+
 # Load environment variables
 load_dotenv()
 
@@ -42,6 +44,10 @@ def fetch_history(session_id):
 
 # Fetch all session IDs
 all_sessions = list(history_collection.distinct("sessionId"))
+
+# Button to display the start command
+if st.sidebar.button("Show Start Command"):
+    st.sidebar.code("streamlit run agent-hub.py", language="bash")
 
 # Sidebar for session selection
 st.sidebar.header("Session Selection")
