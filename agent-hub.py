@@ -168,7 +168,7 @@ show_graph = st.checkbox("Show Graph", value=False)  # Now unchecked by default
 # Generate and display the graph only if the checkbox is checked
 if show_graph:
     graph = generate_graph(history, scale=graph_scale)
-    st.graphviz_chart(graph, use_container_width=True)
+    st.graphviz_chart(graph, width=800, use_container_width=False)
 
 # Display execution history
 st.header("Execution History")
