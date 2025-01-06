@@ -13,12 +13,12 @@ st.set_page_config(layout="wide")
 if 'selected_session' not in st.session_state:
     st.session_state.selected_session = None
 
-# Initialize filter roles with a callback
-def init_filter_roles():
-    if 'filter_roles' not in st.session_state:
-        st.session_state.filter_roles = ["system", "user", "assistant", "tool"]
+# Initialize filter roles with default values
+if 'filter_roles' not in st.session_state:
+    st.session_state.filter_roles = ["system", "user", "assistant", "tool"]
 
-init_filter_roles()
+def update_filter_roles():
+    st.session_state.filter_roles = st.session_state.role_multiselect
 
 st.title("LLM Agent Hub")
 
@@ -195,13 +195,13 @@ if st.session_state.selected_session:
     # Execution History section
     st.header("Execution History")
     
-    # Common filter control for both graph and history
+    # Common filter control for both graph and history with improved state management
     selected_roles = st.multiselect(
         "Filter by Role",
         ["system", "user", "assistant", "tool"],
         default=st.session_state.filter_roles,
-        key="filter_roles",
-        on_change=None
+        key="role_multiselect",
+        on_change=update_filter_roles
     )
     
     simplify_assistant_messages = st.checkbox("Simplify Assistant Messages with Tool Calls", value=True)
@@ -213,16 +213,22 @@ if st.session_state.selected_session:
             for tool_call in message["tool_calls"]:
                 tool_function_names[tool_call["id"]] = tool_call["function"]["name"]
 
-    # Filter and display history based on selected roles
+    # Corrected filtering logic
     selected_roles_lower = [role.lower() for role in selected_roles]
     filtered_history = []
     
     for message in history:
         if isinstance(message, dict):
-            if "tool_calls" in message and "tool" in selected_roles_lower:
+            message_role = message.get("role", message.get("sl_role", "")).lower()
+            
+            # Regular role-based filtering
+            if message_role in selected_roles_lower:
                 filtered_history.append(message)
-            elif message.get("role", "").lower() in selected_roles_lower or \
-                    message.get("sl_role", "").lower() in selected_roles_lower:
+            # Tool-specific filtering
+            elif message.get("sl_role") == "TOOL" and "tool" in selected_roles_lower:
+                filtered_history.append(message)
+            # Assistant messages with tool calls are only shown if both tool and assistant are selected
+            elif message.get("tool_calls") and "tool" in selected_roles_lower and "assistant" in selected_roles_lower and message_role == "assistant":
                 filtered_history.append(message)
 
     if filtered_history:
