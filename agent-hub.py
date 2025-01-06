@@ -18,7 +18,7 @@ db = client.get_database("audiobooks")
 history_collection = db.get_collection("Log")
 
 # Fetch all session IDs
-all_sessions = list(history_collection.distinct("session_id"))
+all_sessions = list(history_collection.distinct("sessionId"))
 if not all_sessions:
     st.warning("No sessions found in the database.")
     history = []
@@ -49,7 +49,7 @@ else:
     )
     
     # Fetch execution history from MongoDB for the selected session
-    history = list(history_collection.find({"session_id": selected_session}).limit(1))
+    history = list(history_collection.find({"sessionId": selected_session}).limit(1))
     if history:
         history = history[0].get("messages", [])
     else:
