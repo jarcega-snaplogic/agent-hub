@@ -38,7 +38,6 @@ st.sidebar.header("Session Selection")
 for session_id in all_sessions:
     if st.sidebar.button(session_id, key=session_id):
         st.session_state.selected_session = session_id
-        st.experimental_rerun()
 
 # Display selected session in the main area immediately after selection
 if st.session_state.selected_session:
