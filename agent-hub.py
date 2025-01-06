@@ -172,7 +172,7 @@ if 'show_graph' not in st.session_state:
 
 # Display the header and the checkbox above the graph
 st.header("Agent Flow Graph")
-show_graph = st.checkbox("Show Graph", value=st.session_state.show_graph)  # Now unchecked by default
+show_graph = st.checkbox("Show Graph", value=st.session_state.show_graph, key="show_graph_checkbox")  # Now unchecked by default
 
 # Generate and display the graph only if the checkbox is checked
 if st.session_state.show_graph:
