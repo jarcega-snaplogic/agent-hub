@@ -7,19 +7,11 @@ from pymongo import MongoClient
 # Configure the page to use wide layout
 st.set_page_config(layout="wide")
 
+# Initialize session state for selected session
 if 'selected_session' not in st.session_state:
     st.session_state.selected_session = None
 
 st.title("LLM Agent Hub")
-def fetch_history(session_id):
-    if session_id:
-        history = list(history_collection.find({"sessionId": session_id}).limit(1))
-        if history:
-            return history[0].get("messages", [])
-    return []
-
-if st.session_state.selected_session:
-    st.markdown(f"Selected Session: {st.session_state.selected_session}")
 
 # MongoDB connection string
 MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
@@ -29,24 +21,32 @@ client = MongoClient(MONGO_URI)
 db = client.get_database("audiobooks")
 history_collection = db.get_collection("Log")
 
+def fetch_history(session_id):
+    if session_id:
+        history = list(history_collection.find({"sessionId": session_id}).limit(1))
+        if history:
+            return history[0].get("messages", [])
+    return []
+
 # Fetch all session IDs
 all_sessions = list(history_collection.distinct("sessionId"))
-if not all_sessions:
-    st.warning("No sessions found in the database.")
-    history = []
-else:
-    # Initialize session selection
-    session_start_index = 0
-    session_end_index = 10
-    # Sidebar for session selection
-    st.sidebar.header("Session Selection")
-    
-    # Display session IDs in a table-like format
-    for session_id in all_sessions:
-        if st.sidebar.button(session_id):
-            st.session_state.selected_session = session_id
-    
+
+# Sidebar for session selection
+st.sidebar.header("Session Selection")
+
+# Display session IDs in a table-like format with styling for the selected session
+for session_id in all_sessions:
+    if st.sidebar.button(session_id, key=session_id):
+        st.session_state.selected_session = session_id
+        st.experimental_rerun()
+
+# Display selected session in the main area immediately after selection
+if st.session_state.selected_session:
+    st.markdown(f"Selected Session: **{st.session_state.selected_session}**")
     history = fetch_history(st.session_state.selected_session)
+else:
+    st.markdown("No session selected")
+    history = []
 
 @st.cache_data
 def generate_graph(history, scale=1.0):
@@ -150,18 +150,16 @@ graph_scale = st.sidebar.slider("Graph Scale", min_value=0.5, max_value=2.0, val
 
 # Add download button for DOT source - visible at all times
 # The download button should be in the sidebar
-dot_source = get_graph_source(generate_graph(history, scale=graph_scale))
-st.sidebar.download_button(
-    label="Download Graph Source (DOT)",
-    data=dot_source,
-    file_name="agent_flow.dot",
-    mime="text/plain"
-)
+if history:
+    dot_source = get_graph_source(generate_graph(history, scale=graph_scale))
+    st.sidebar.download_button(
+        label="Download Graph Source (DOT)",
+        data=dot_source,
+        file_name="agent_flow.dot",
+        mime="text/plain"
+    )
 # Add link to Graphviz website
 st.sidebar.markdown("[Graphviz Online Viewer](https://dreampuf.github.io/GraphvizOnline/)")
-
-# Fetch history on initial load
-history = fetch_history(st.session_state.selected_session)
 
 # Display the header and the checkbox above the graph
 st.header("Agent Flow Graph")
