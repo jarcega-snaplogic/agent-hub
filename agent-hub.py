@@ -3,8 +3,6 @@ import json
 import graphviz
 import base64
 from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
 
 # Configure the page to use wide layout
 st.set_page_config(layout="wide")
@@ -22,11 +20,8 @@ init_filter_roles()
 
 st.title("LLM Agent Hub")
 
-# Load environment variables
-load_dotenv()
-
 # MongoDB connection string
-MONGO_URI = os.getenv("MONGO_URI")
+MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
 
 # Initialize MongoDB client
 client = MongoClient(MONGO_URI)
