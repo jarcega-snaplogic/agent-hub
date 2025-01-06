@@ -138,6 +138,7 @@ def generate_graph(history, scale=1.0):
         for response in current_tool_responses:
             graph.edge(response, last_assistant_node)
 
+    graph.attr(size=f"8,8")
     return graph
 
 def get_graph_source(graph):
@@ -168,7 +169,7 @@ show_graph = st.checkbox("Show Graph", value=False)  # Now unchecked by default
 # Generate and display the graph only if the checkbox is checked
 if show_graph:
     graph = generate_graph(history, scale=graph_scale)
-    st.graphviz_chart(graph, width=800, use_container_width=False)
+    st.graphviz_chart(graph, use_container_width=True)
 
 # Display execution history
 st.header("Execution History")
