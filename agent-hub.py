@@ -164,9 +164,8 @@ st.sidebar.markdown("[Graphviz Online Viewer](https://dreampuf.github.io/Graphvi
 st.header("Agent Flow Graph")
 show_graph = st.checkbox("Show Graph", value=False)  # Now unchecked by default
 
-# Generate and display the graph only if the checkbox is checked
+# Generate and display the graph and filter by role inside the container
 if show_graph:
-    graph = generate_graph(history, scale=graph_scale)
     with st.container():
         st.markdown(
             """
@@ -179,18 +178,19 @@ if show_graph:
             """,
             unsafe_allow_html=True,
         )
+        graph = generate_graph(history, scale=graph_scale)
         st.graphviz_chart(graph, use_container_width=True)
+
+        # Add functionality for filtering messages by role
+        selected_roles = st.multiselect(
+            "Filter by Role",
+            ["system", "user", "assistant", "tool"],
+            default=["system", "user", "assistant", "tool"]
+        )
+        selected_roles_lower = [role.lower() for role in selected_roles]
 
 # Display execution history
 st.header("Execution History")
-
-# Add functionality for filtering messages by role
-selected_roles = st.multiselect(
-    "Filter by Role",
-    ["system", "user", "assistant", "tool"],
-    default=["system", "user", "assistant", "tool"]
-)
-selected_roles_lower = [role.lower() for role in selected_roles]
 
 simplify_assistant_messages = st.checkbox("Simplify Assistant Messages with Tool Calls", value=True) # Checked by default
 
