@@ -36,8 +36,13 @@ st.sidebar.header("Session Selection")
 
 # Display session IDs in a table-like format with styling for the selected session
 for session_id in all_sessions:
-    if st.sidebar.button(session_id, key=session_id):
+    button_style = "border: 2px solid red;" if session_id == st.session_state.selected_session else ""
+    if st.sidebar.button(session_id, key=session_id,  
+                         help="Select this session",
+                         disabled=session_id == st.session_state.selected_session,
+                         ):
         st.session_state.selected_session = session_id
+        st.session_state.show_graph = False
         st.experimental_rerun()
 
 # Display selected session in the main area immediately after selection
@@ -161,12 +166,16 @@ if history:
 # Add link to Graphviz website
 st.sidebar.markdown("[Graphviz Online Viewer](https://dreampuf.github.io/GraphvizOnline/)")
 
+# Initialize show_graph in session state
+if 'show_graph' not in st.session_state:
+    st.session_state.show_graph = False
+
 # Display the header and the checkbox above the graph
 st.header("Agent Flow Graph")
-show_graph = st.checkbox("Show Graph", value=False)  # Now unchecked by default
+show_graph = st.checkbox("Show Graph", value=st.session_state.show_graph)  # Now unchecked by default
 
 # Generate and display the graph only if the checkbox is checked
-if show_graph:
+if st.session_state.show_graph:
     graph = generate_graph(history, scale=graph_scale)
     st.graphviz_chart(graph, use_container_width=True)
 
