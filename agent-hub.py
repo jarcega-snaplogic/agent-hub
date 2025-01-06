@@ -17,12 +17,43 @@ client = MongoClient(MONGO_URI)
 db = client.get_database("audiobooks")
 history_collection = db.get_collection("Log")
 
-# Fetch execution history from MongoDB
-history = list(history_collection.find().limit(1))
-if history:
-    history = history[0].get("messages", [])
-else:
+# Fetch all session IDs
+all_sessions = list(history_collection.distinct("session_id"))
+if not all_sessions:
+    st.warning("No sessions found in the database.")
     history = []
+else:
+    # Initialize session selection
+    session_start_index = 0
+    session_end_index = 10
+    
+    # Sidebar for session selection
+    st.sidebar.header("Session Selection")
+    
+    # Navigation buttons
+    col1, col2 = st.sidebar.columns(2)
+    if col1.button("Previous 10"):
+        session_start_index = max(0, session_start_index - 10)
+        session_end_index = max(10, session_end_index - 10)
+    if col2.button("Next 10"):
+        session_start_index = min(len(all_sessions), session_start_index + 10)
+        session_end_index = min(len(all_sessions), session_end_index + 10)
+    
+    # Display session IDs in a selectbox
+    current_sessions = all_sessions[session_start_index:session_end_index]
+    selected_session = st.sidebar.selectbox(
+        "Select Session",
+        current_sessions,
+        index=0,
+        format_func=lambda x: f"Session ID: {x}"
+    )
+    
+    # Fetch execution history from MongoDB for the selected session
+    history = list(history_collection.find({"session_id": selected_session}).limit(1))
+    if history:
+        history = history[0].get("messages", [])
+    else:
+        history = []
 
 @st.cache_data
 def generate_graph(history, scale=1.0):
