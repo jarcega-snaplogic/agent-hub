@@ -11,6 +11,13 @@ if 'selected_session' not in st.session_state:
     st.session_state.selected_session = None
 
 st.title("LLM Agent Hub")
+def fetch_history(session_id):
+    if session_id:
+        history = list(history_collection.find({"sessionId": session_id}).limit(1))
+        if history:
+            return history[0].get("messages", [])
+    return []
+
 if st.session_state.selected_session:
     st.markdown(f"Selected Session: {st.session_state.selected_session}")
 
@@ -39,15 +46,7 @@ else:
         if st.sidebar.button(session_id):
             st.session_state.selected_session = session_id
     
-    if st.session_state.selected_session:
-        # Fetch execution history from MongoDB for the selected session
-        history = list(history_collection.find({"sessionId": st.session_state.selected_session}).limit(1))
-        if history:
-            history = history[0].get("messages", [])
-        else:
-            history = []
-    else:
-        history = []
+    history = fetch_history(st.session_state.selected_session)
 
 @st.cache_data
 def generate_graph(history, scale=1.0):
@@ -160,6 +159,9 @@ st.sidebar.download_button(
 )
 # Add link to Graphviz website
 st.sidebar.markdown("[Graphviz Online Viewer](https://dreampuf.github.io/GraphvizOnline/)")
+
+# Fetch history on initial load
+history = fetch_history(st.session_state.selected_session)
 
 # Display the header and the checkbox above the graph
 st.header("Agent Flow Graph")
