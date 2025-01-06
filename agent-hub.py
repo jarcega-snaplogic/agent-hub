@@ -138,7 +138,6 @@ def generate_graph(history, scale=1.0):
         for response in current_tool_responses:
             graph.edge(response, last_assistant_node)
 
-    graph.attr(size=f"8,8")
     return graph
 
 def get_graph_source(graph):
