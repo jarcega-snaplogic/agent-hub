@@ -2,16 +2,23 @@ import streamlit as st
 import json
 import graphviz
 import base64
+from pymongo import MongoClient
 
 # Configure the page to use wide layout
 st.set_page_config(layout="wide")
 
 st.title("LLM Agent Hub")
 
-# Load execution history from sampleLog.json
-with open("sampleLog.json", "r", encoding="latin-1") as f:
-    data = json.load(f)
-    history = data.get("messages", [])
+# MongoDB connection string
+MONGO_URI = "mongodb+srv://jocelynarcega:PVnDsfN4XnOYv0CX@taletime.s8dtl.mongodb.net/?retryWrites=true&w=majority&appName=taletime"
+
+# Initialize MongoDB client
+client = MongoClient(MONGO_URI)
+db = client.get_database("taletime")
+history_collection = db.get_collection("history")
+
+# Fetch execution history from MongoDB
+history = list(history_collection.find())
 
 @st.cache_data
 def generate_graph(history, scale=1.0):
@@ -105,7 +112,6 @@ def generate_graph(history, scale=1.0):
 
     return graph
 
-# Helper function to get graph source
 def get_graph_source(graph):
     """Get the DOT source code for the graph."""
     return graph.source
