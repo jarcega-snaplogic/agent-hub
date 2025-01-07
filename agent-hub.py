@@ -30,7 +30,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 
 # Initialize MongoDB client
 client = MongoClient(MONGO_URI)
-db = client.get_database("audiobooks")
+db = client.get_database("snaplogic")
 history_collection = db.get_collection("Log")
 
 def fetch_history(session_id):
