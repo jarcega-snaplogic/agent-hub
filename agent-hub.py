@@ -69,8 +69,8 @@ def fetch_history(session_id):
             return history[0].get("messages", [])
     return []
 
-# Fetch all session IDs
-all_sessions = list(history_collection.distinct("sessionId"))
+# Fetch the last 10 session IDs and agent names
+all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 
 # Display session IDs and agent names in a table-like format with styling for the selected session
 for session_data in all_sessions:
