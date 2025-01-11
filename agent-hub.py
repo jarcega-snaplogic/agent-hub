@@ -43,8 +43,34 @@ def fetch_history(session_id):
 # Fetch all session IDs
 all_sessions = list(history_collection.distinct("sessionId"))
 
-# Sidebar for session selection
-st.sidebar.header("Session Selection")
+# Sidebar for database and session selection
+st.sidebar.header("Database and Session Selection")
+
+# Database selection dropdown
+selected_database = st.sidebar.selectbox("Select Database", ["snaplogic", "audiobooks"], key="selected_database")
+
+# Initialize selected session based on the database
+if "selected_session" not in st.session_state or st.session_state.get("previous_database", None) != selected_database:
+    st.session_state.selected_session = None
+st.session_state.previous_database = selected_database
+
+# MongoDB connection string
+MONGO_URI = os.getenv("MONGO_URI")
+
+# Initialize MongoDB client
+client = MongoClient(MONGO_URI)
+db = client.get_database(selected_database)
+history_collection = db.get_collection("Log")
+
+def fetch_history(session_id):
+    if session_id:
+        history = list(history_collection.find({"sessionId": session_id}).limit(1))
+        if history:
+            return history[0].get("messages", [])
+    return []
+
+# Fetch all session IDs
+all_sessions = list(history_collection.distinct("sessionId"))
 
 # Display session IDs in a table-like format with styling for the selected session
 for session_id in all_sessions:
@@ -52,7 +78,7 @@ for session_id in all_sessions:
         st.session_state.selected_session = session_id
 
 # Graph generation functions
-@st.cache_data
+@st.cache_data(allow_output_mutation=True)
 def generate_graph(history, scale=1.0):
     # Create graph with improved styling
     graph = graphviz.Digraph(
