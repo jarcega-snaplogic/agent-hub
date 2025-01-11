@@ -40,8 +40,8 @@ def fetch_history(session_id):
             return history[0].get("messages", [])
     return []
 
-# Fetch all session IDs
-all_sessions = list(history_collection.distinct("sessionId"))
+# Fetch the last 10 session IDs and agent names
+all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 
 # Sidebar for database and session selection
 st.sidebar.header("Database and Session Selection")
@@ -72,9 +72,12 @@ def fetch_history(session_id):
 # Fetch all session IDs
 all_sessions = list(history_collection.distinct("sessionId"))
 
-# Display session IDs in a table-like format with styling for the selected session
-for session_id in all_sessions:
-    if st.sidebar.button(session_id, key=session_id):
+# Display session IDs and agent names in a table-like format with styling for the selected session
+for session_data in all_sessions:
+    session_id = session_data.get("sessionId")
+    agent_name = session_data.get("agentName")
+    session_label = f"{session_id} ({agent_name})" if agent_name else session_id
+    if st.sidebar.button(session_label, key=session_id):
         st.session_state.selected_session = session_id
 
 # Graph generation functions
