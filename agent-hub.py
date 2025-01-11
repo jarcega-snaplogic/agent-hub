@@ -78,7 +78,7 @@ for session_id in all_sessions:
         st.session_state.selected_session = session_id
 
 # Graph generation functions
-@st.cache_data(allow_output_mutation=True)
+@st.cache_data
 def generate_graph(history, scale=1.0):
     # Create graph with improved styling
     graph = graphviz.Digraph(
