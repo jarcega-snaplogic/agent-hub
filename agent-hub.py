@@ -188,7 +188,7 @@ if st.session_state.selected_session:
     # Fetch the session document to check for sfdcUserId
     session_doc = list(history_collection.find({"sessionId": st.session_state.selected_session}).limit(1))
     if session_doc and "sfdcUserId" in session_doc[0]:
-        st.markdown(f"SFDC User ID: **{session_doc[0]['sfdcUserId']}**")
+        st.markdown(f"Authenticated User: **{session_doc[0]['sfdcUserId']}**")
     
     # Generate graph and get tool names
     graph, tool_names = generate_graph(history, scale=graph_scale)
