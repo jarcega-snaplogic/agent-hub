@@ -69,12 +69,15 @@ def fetch_history(session_id):
             return history[0].get("messages", [])
     return []
 
-# Search box for session ID
+# Search boxes for session ID and agent name
 search_session_id = st.sidebar.text_input("Search Session ID")
+search_agent_name = st.sidebar.text_input("Search Agent Name")
 
 # Fetch sessions based on search input or get the last 10
 if search_session_id:
     all_sessions = list(history_collection.find({"sessionId": search_session_id}, {"sessionId": 1, "agentName": 1, "_id": 0}))
+elif search_agent_name:
+    all_sessions = list(history_collection.find({"agentName": search_agent_name}, {"sessionId": 1, "agentName": 1, "_id": 0}))
 else:
     all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 
