@@ -69,16 +69,26 @@ def fetch_history(session_id):
             return history[0].get("messages", [])
     return []
 
-# Fetch the last 10 session IDs and agent names
-all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
+# Search box for session ID
+search_session_id = st.sidebar.text_input("Search Session ID")
 
-# Display session IDs and agent names in a table-like format with styling for the selected session
-for session_data in all_sessions:
-    session_id = session_data.get("sessionId")
-    agent_name = session_data.get("agentName")
-    session_label = f"{session_id} ({agent_name})" if agent_name else session_id
-    if st.sidebar.button(session_label, key=session_id):
-        st.session_state.selected_session = session_id
+# Fetch sessions based on search input or get the last 10
+if search_session_id:
+    all_sessions = list(history_collection.find({"sessionId": search_session_id}, {"sessionId": 1, "agentName": 1, "_id": 0}))
+else:
+    all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
+
+# Display session IDs and agent names
+if all_sessions:
+    for session_data in all_sessions:
+        session_id = session_data.get("sessionId")
+        agent_name = session_data.get("agentName")
+        session_label = f"{session_id} ({agent_name})" if agent_name else session_id
+        if st.sidebar.button(session_label, key=session_id):
+            st.session_state.selected_session = session_id
+else:
+    st.sidebar.info("No sessions found.")
+
 
 # Graph generation functions
 @st.cache_data
