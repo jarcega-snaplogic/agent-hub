@@ -15,7 +15,7 @@ if 'selected_session' not in st.session_state:
 
 # Initialize filter roles with default values
 if 'filter_roles' not in st.session_state:
-    st.session_state.filter_roles = ["system", "user", "assistant", "tool"]
+    st.session_state.filter_roles = ["system", "user", "assistant", "tool", "error"]
 
 def update_filter_roles():
     st.session_state.filter_roles = st.session_state.role_multiselect
