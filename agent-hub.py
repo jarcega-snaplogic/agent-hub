@@ -245,7 +245,7 @@ if st.session_state.selected_session:
     # Common filter control for both graph and history with improved state management
     selected_roles = st.multiselect(
         "Filter by Role",
-        ["system", "user", "assistant", "tool"],
+        ["system", "user", "assistant", "tool", "error"],
         default=st.session_state.filter_roles,
         key="role_multiselect",
         on_change=update_filter_roles
@@ -273,6 +273,8 @@ if st.session_state.selected_session:
                 filtered_history.append(message)
             # Tool-specific filtering
             elif message.get("sl_role") == "TOOL" and "tool" in selected_roles_lower:
+                filtered_history.append(message)
+            elif message.get("sl_role") == "ERROR" and "error" in selected_roles_lower:
                 filtered_history.append(message)
             # Assistant messages with tool calls are only shown if both tool and assistant are selected
             elif message.get("tool_calls") and "tool" in selected_roles_lower and "assistant" in selected_roles_lower and message_role == "assistant":
