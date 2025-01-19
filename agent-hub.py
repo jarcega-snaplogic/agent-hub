@@ -72,7 +72,7 @@ def fetch_history(session_id):
 
 # Fetch sessions based on search input or get the last 10
 if selected_agent != "All":
-    all_sessions = list(history_collection.find({"agentName": selected_agent}, {"sessionId": 1, "agentName": 1, "_id": 0}))
+    all_sessions = list(history_collection.find({"agentName": selected_agent}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 elif search_session_id:
     all_sessions = list(history_collection.find({"sessionId": search_session_id}, {"sessionId": 1, "agentName": 1, "_id": 0}))
 else:
