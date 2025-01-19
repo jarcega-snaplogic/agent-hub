@@ -301,7 +301,10 @@ if st.session_state.selected_session:
             # Improved filtering logic
             message_role = message.get("sl_role", message.get("role", "")).lower()
             
-            if any(role in message_role for role in selected_roles_lower):
+            if message_role == "tool (response)" or (message.get("role", "").lower() == "user" and isinstance(message.get("content"), list) and len(message["content"]) > 0 and message["content"][0].get("toolResult")):
+                if "tool" in selected_roles_lower:
+                    filtered_history.append(message)
+            elif any(role in message_role for role in selected_roles_lower):
                 filtered_history.append(message)
             elif "assistant" in selected_roles_lower and "tool" in message_role:
                 filtered_history.append(message)
@@ -314,22 +317,18 @@ if st.session_state.selected_session:
             role = message.get('sl_role') or message.get('role', 'Output')
             
             # Determine the display title
-            if role.lower() == "tool (response)":
-                # For messages without sl_role, check the content structure
-                if isinstance(message.get("content"), list) and len(message["content"]) > 0:
-                    tool_result = message["content"][0].get("toolResult", {})
-                    tool_use_id = tool_result.get("toolUseId", "")
-                    # Find the corresponding tool call in previous messages
-                    tool_name = "Unknown"
-                    for prev_message in filtered_history[:i]:
-                        if isinstance(prev_message.get("content"), list) and len(prev_message["content"]) > 1:
-                            tool_use = prev_message["content"][1].get("toolUse", {})
-                            if tool_use.get("toolUseId") == tool_use_id:
-                                tool_name = tool_use.get("name", "Unknown")
-                                break
-                    display_title = f"Message {i + 1} - TOOL ({tool_name})"
-                else:
-                    display_title = f"Message {i + 1} - TOOL (toolname_wip)"
+            if role.lower() == "tool (response)" or (message.get("role", "").lower() == "user" and isinstance(message.get("content"), list) and len(message["content"]) > 0 and message["content"][0].get("toolResult")):
+                tool_result = message["content"][0].get("toolResult", {})
+                tool_use_id = tool_result.get("toolUseId", "")
+                # Find the corresponding tool call in previous messages
+                tool_name = "Unknown"
+                for prev_message in filtered_history[:i]:
+                    if isinstance(prev_message.get("content"), list) and len(prev_message["content"]) > 1:
+                        tool_use = prev_message["content"][1].get("toolUse", {})
+                        if tool_use.get("toolUseId") == tool_use_id:
+                            tool_name = tool_use.get("name", "Unknown")
+                            break
+                display_title = f"Message {i + 1} - TOOL ({tool_name})"
             elif role.lower().startswith("tool ("):
                 tool_name = role[5:-1]  # Extract tool name from "TOOL (tool_name)"
                 display_title = f"Message {i + 1} - TOOL ({tool_name})"
