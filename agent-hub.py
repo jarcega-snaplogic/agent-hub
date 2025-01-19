@@ -265,12 +265,11 @@ if st.session_state.selected_session:
             # Check if sl_role is missing and apply the workaround
             if not message.get("sl_role"):
                 content = message.get("content", [])
-                if isinstance(content, list) and len(content) > 1:
-                    if message.get("role", "").lower() == "assistant" and content[1].get("toolUse"):
+                if isinstance(content, list) and len(content) > 0:
+                    if message.get("role", "").lower() == "assistant" and len(content) > 1 and content[1].get("toolUse"):
                         message["sl_role"] = "assistant (tool call)"
-                    elif message.get("role", "").lower() == "user" and content[0].get("toolUse"):
-                        tool_name = content[0].get("toolUse", {}).get("tool", "Unknown")
-                        message["sl_role"] = f"TOOL ({tool_name})"
+                    elif message.get("role", "").lower() == "user" and content[0].get("toolResult"):
+                        message["sl_role"] = "tool (response)"
                 elif message.get("tool_calls"):
                     message["sl_role"] = "assistant (tool call)"
 
@@ -289,15 +288,15 @@ if st.session_state.selected_session:
         for i, message in enumerate(filtered_history):
             role = message.get('sl_role') or message.get('role', 'Output')
             
-            # Add tool name for TOOL messages
-            tool_name = ""
-            if "TOOL" in role.upper():
-                if message.get("function_id"):
-                    tool_name = f" ({tool_function_names.get(message['function_id'], 'Unknown')})"
-                elif isinstance(message.get("content"), list) and message["content"][0].get("toolUse"):
-                    tool_name = f" ({message['content'][0]['toolUse'].get('tool', 'Unknown')})"
+            # Determine the display title
+            if role.lower() == "tool (response)":
+                display_title = f"Message {i + 1} - (tool response)"
+            elif role.lower().startswith("tool ("):
+                display_title = f"Message {i + 1} - {role}"
+            else:
+                display_title = f"Message {i + 1} - {role}"
             
-            with st.expander(f"Message {i + 1} - {role}{tool_name}"):
+            with st.expander(display_title):
                 # Rest of the display logic remains the same
                 if simplify_assistant_messages and \
                     (message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse"))) and \
