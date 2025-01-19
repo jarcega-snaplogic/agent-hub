@@ -292,7 +292,11 @@ if st.session_state.selected_session:
             if role.lower() == "tool (response)":
                 display_title = f"Message {i + 1} - (tool response)"
             elif role.lower().startswith("tool ("):
-                display_title = f"Message {i + 1} - {role}"
+                tool_name = role[5:-1]  # Extract tool name from "TOOL (tool_name)"
+                display_title = f"Message {i + 1} - TOOL ({tool_name})"
+            elif role.upper() == "TOOL" and message.get("function_id"):
+                tool_name = tool_function_names.get(message['function_id'], 'Unknown')
+                display_title = f"Message {i + 1} - TOOL ({tool_name})"
             else:
                 display_title = f"Message {i + 1} - {role}"
             
