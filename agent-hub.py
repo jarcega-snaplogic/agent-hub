@@ -317,15 +317,8 @@ if st.session_state.selected_session:
                     elif isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse"):
                         tool_use = message["content"][1]["toolUse"]
                         st.write(f"**Function:** {tool_use.get('name', 'N/A')}")
-                        st.write(f"**Tool Use ID:** {tool_use.get('toolUseId', 'N/A')}")
                         input_data = tool_use.get('input', {})
-                        st.subheader("Input:")
-                        for key, value in input_data.items():
-                            st.write(f"**{key}:** {value}")
-                    
-                    if isinstance(message.get("content"), list) and len(message["content"]) > 0:
-                        st.subheader("Assistant Message:")
-                        st.write(message["content"][0].get("text", ""))
+                        st.json(input_data, expanded=True)
     else:
         st.info("No messages match the selected filter.")
 else:
