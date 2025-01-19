@@ -290,7 +290,23 @@ if st.session_state.selected_session:
             
             # Determine the display title
             if role.lower() == "tool (response)":
-                display_title = f"Message {i + 1} - TOOL (toolname_wip)"
+                # For messages without sl_role, check the content structure
+                if isinstance(message.get("content"), list) and len(message["content"]) > 0:
+                    tool_result = message["content"][0].get("toolResult", {})
+                    tool_use_id = tool_result.get("toolUseId", "")
+                    # Find the corresponding tool call in previous messages
+                    tool_name = "Unknown"
+                    for prev_message in filtered_history[:i]:
+                        if prev_message.get("tool_calls"):
+                            for tool_call in prev_message["tool_calls"]:
+                                if tool_call.get("id") == tool_use_id:
+                                    tool_name = tool_call["function"]["name"]
+                                    break
+                            if tool_name != "Unknown":
+                                break
+                    display_title = f"Message {i + 1} - TOOL ({tool_name})"
+                else:
+                    display_title = f"Message {i + 1} - TOOL (toolname_wip)"
             elif role.lower().startswith("tool ("):
                 tool_name = role[5:-1]  # Extract tool name from "TOOL (tool_name)"
                 display_title = f"Message {i + 1} - TOOL ({tool_name})"
