@@ -305,7 +305,8 @@ if st.session_state.selected_session:
                 if "tool" in selected_roles_lower:
                     filtered_history.append(message)
             elif any(role in message_role for role in selected_roles_lower):
-                filtered_history.append(message)
+                if message_role != "user" or not (isinstance(message.get("content"), list) and len(message["content"]) > 0 and message["content"][0].get("toolResult")):
+                    filtered_history.append(message)
             elif "assistant" in selected_roles_lower and "tool" in message_role:
                 filtered_history.append(message)
             elif message.get("tool_calls") and "assistant" in selected_roles_lower:
@@ -336,7 +337,7 @@ if st.session_state.selected_session:
                 tool_name = tool_function_names.get(message['function_id'], 'Unknown')
                 display_title = f"Message {i + 1} - TOOL ({tool_name})"
             else:
-                display_title = f"Message {i + 1} - {role}"
+                display_title = f"Message {i + 1} - {role.upper()}"
             
             with st.expander(display_title):
                 # Rest of the display logic remains the same
