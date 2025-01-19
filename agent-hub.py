@@ -122,26 +122,32 @@ def generate_graph(history, scale=1.0):
         i = i+1
         node_id = f"message_{i}"
         
-        if message.get("sl_role") in ["SYSTEM", "USER"]:
+        # Determine the role and label
+        role = message.get('sl_role') or message.get('role', 'Output')
+        
+        if role.lower() in ["system", "user"]:
             graph.node(node_id,
-                       label=f"{message['sl_role']}\nID: {i}",
+                       label=f"{role.upper()}\nID: {i}",
                        shape="rectangle",
                        style="rounded,filled",
                        fillcolor="#E3F2FD",
                        color="#1565C0")
             
-        elif message.get("role") == "assistant":
+        elif role.lower() == "assistant":
             for response in current_tool_responses:
                 graph.edge(response, node_id)
             current_tool_responses = []
 
-            if message.get("tool_calls"):
-                tool_calls = message["tool_calls"]
+            if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                 tool_calls_text = [f"Assistant\nID: {i}"]
-                for tool_call in tool_calls:
-                    tool_calls_text.append(f"• {tool_call['function']['name']}")
-                    # Store tool name for the function ID
-                    tool_names[tool_call['id']] = tool_call['function']['name']
+                if message.get("tool_calls"):
+                    for tool_call in message["tool_calls"]:
+                        tool_calls_text.append(f"• {tool_call['function']['name']}")
+                        tool_names[tool_call['id']] = tool_call['function']['name']
+                elif isinstance(message.get("content"), list) and len(message["content"]) > 1:
+                    tool_use = message["content"][1].get("toolUse", {})
+                    tool_calls_text.append(f"• {tool_use.get('name', 'Unknown')}")
+                    tool_names[tool_use.get('toolUseId')] = tool_use.get('name', 'Unknown')
                 label = "\n".join(tool_calls_text)
             else:
                 label = f"Assistant\nID: {i}"
@@ -153,13 +159,27 @@ def generate_graph(history, scale=1.0):
                        fillcolor="#FFF3E0",
                        color="#E65100")
             
-            if message.get("tool_calls"):
+            if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                 with graph.subgraph() as s:
                     s.attr(rank='same')
                     y = 1
-                    for tool_call in message["tool_calls"]:
-                        tool_node_id = f"tool_{tool_call['id']}"
-                        tool_name = tool_call['function']['name']
+                    if message.get("tool_calls"):
+                        for tool_call in message["tool_calls"]:
+                            tool_node_id = f"tool_{tool_call['id']}"
+                            tool_name = tool_call['function']['name']
+                            s.node(tool_node_id,
+                                   label=f"{tool_name}\nID: {i+y}",
+                                   shape="hexagon",
+                                   style="filled",
+                                   fillcolor="#F3E5F5",
+                                   color="#6A1B9A")
+                            graph.edge(node_id, tool_node_id)
+                            tool_nodes[tool_call['id']] = tool_node_id
+                            y += 1
+                    elif isinstance(message.get("content"), list) and len(message["content"]) > 1:
+                        tool_use = message["content"][1].get("toolUse", {})
+                        tool_node_id = f"tool_{tool_use.get('toolUseId', 'unknown')}"
+                        tool_name = tool_use.get('name', 'Unknown')
                         s.node(tool_node_id,
                                label=f"{tool_name}\nID: {i+y}",
                                shape="hexagon",
@@ -167,14 +187,19 @@ def generate_graph(history, scale=1.0):
                                fillcolor="#F3E5F5",
                                color="#6A1B9A")
                         graph.edge(node_id, tool_node_id)
-                        tool_nodes[tool_call['id']] = tool_node_id
-                        y += 1
+                        tool_nodes[tool_use.get('toolUseId', 'unknown')] = tool_node_id
 
             last_assistant_node = node_id
             
-        elif message.get("sl_role") == "TOOL":
+        elif role.lower().startswith("tool"):
+            tool_name = role[5:-1] if role.lower().startswith("tool (") else "Unknown"
             if message.get("function_id") and message["function_id"] in tool_nodes:
                 current_tool_responses.append(tool_nodes[message["function_id"]])
+            elif isinstance(message.get("content"), list) and len(message["content"]) > 0:
+                tool_result = message["content"][0].get("toolResult", {})
+                tool_use_id = tool_result.get("toolUseId", "")
+                if tool_use_id in tool_nodes:
+                    current_tool_responses.append(tool_nodes[tool_use_id])
 
     if current_tool_responses and last_assistant_node:
         for response in current_tool_responses:
