@@ -76,7 +76,7 @@ if selected_agent != "All":
 elif search_session_id:
     all_sessions = list(history_collection.find({"sessionId": search_session_id}, {"sessionId": 1, "agentName": 1, "_id": 0}))
 else:
-    all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10)) if not agent_names else []
+    all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 
 # Display session IDs and agent names
 if all_sessions:
