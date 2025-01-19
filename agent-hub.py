@@ -259,6 +259,7 @@ if st.session_state.selected_session:
 
     # Replace the existing filtering logic with this updated version
     filtered_history = []
+    selected_roles_lower = [role.lower() for role in selected_roles]
     for message in history:
         if isinstance(message, dict):
             # Check if sl_role is missing and apply the workaround
