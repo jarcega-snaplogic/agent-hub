@@ -257,53 +257,65 @@ if st.session_state.selected_session:
             for tool_call in message["tool_calls"]:
                 tool_function_names[tool_call["id"]] = tool_call["function"]["name"]
 
-    # Corrected filtering logic
-    selected_roles_lower = [role.lower() for role in selected_roles]
+    # Replace the existing filtering logic with this updated version
     filtered_history = []
-    
     for message in history:
         if isinstance(message, dict):
-            message_role = message.get("role", message.get("sl_role", "")).lower()
+            # Check if sl_role is missing and apply the workaround
+            if not message.get("sl_role"):
+                content = message.get("content", [])
+                if isinstance(content, list) and len(content) > 1:
+                    if message.get("role", "").lower() == "assistant" and content[1].get("toolUse"):
+                        message["sl_role"] = "assistant (tool call)"
+                    elif message.get("role", "").lower() == "user" and content[0].get("toolUse"):
+                        tool_name = content[0].get("toolUse", {}).get("tool", "Unknown")
+                        message["sl_role"] = f"TOOL ({tool_name})"
+
+            # Existing filtering logic
+            message_role = message.get("sl_role", message.get("role", "")).lower()
             
-            # Regular role-based filtering
             if message_role in selected_roles_lower:
                 filtered_history.append(message)
-            # Tool-specific filtering
             elif message.get("sl_role") == "TOOL" and "tool" in selected_roles_lower:
                 filtered_history.append(message)
             elif message.get("sl_role") == "ERROR" and "error" in selected_roles_lower:
                 filtered_history.append(message)
-            # Assistant messages with tool calls are only shown if both tool and assistant are selected
             elif message.get("tool_calls") and "tool" in selected_roles_lower and "assistant" in selected_roles_lower and message_role == "assistant":
                 filtered_history.append(message)
 
+    # Update the display logic
     if filtered_history:
         for i, message in enumerate(filtered_history):
-            role = message.get('role', message.get('sl_role', 'Output')) \
-                    if isinstance(message, dict) else 'Output'
-                    
+            role = message.get('sl_role') or message.get('role', 'Output')
+            
             # Add tool name for TOOL messages
             tool_name = ""
-            if role == "TOOL" and message.get("function_id"):
-                tool_name = f" ({tool_function_names.get(message['function_id'], 'Unknown')})"
+            if "TOOL" in role.upper():
+                if message.get("function_id"):
+                    tool_name = f" ({tool_function_names.get(message['function_id'], 'Unknown')})"
+                elif isinstance(message.get("content"), list) and message["content"][0].get("toolUse"):
+                    tool_name = f" ({message['content'][0]['toolUse'].get('tool', 'Unknown')})"
             
-            if message.get("tool_calls"):
-                role += " (tool call)"
-                
             with st.expander(f"Message {i + 1} - {role}{tool_name}"):
+                # Rest of the display logic remains the same
                 if simplify_assistant_messages and \
-                    message.get("tool_calls") and \
+                    (message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse"))) and \
                     (message.get("role", "").lower() == "assistant" or \
                      message.get("sl_role", "").lower() == "assistant"):
                     st.json(message, expanded=False)
                 else:
                     st.json(message)
                     
-                if message.get("tool_calls"):
+                if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                     st.subheader("Tool Calls")
-                    for tool_call in message["tool_calls"]:
-                        st.write(f"**Function:** {tool_call.get('function', {}).get('name', 'N/A')}")
-                        arguments = tool_call.get('function', {}).get('arguments', 'N/A')
+                    if message.get("tool_calls"):
+                        for tool_call in message["tool_calls"]:
+                            st.write(f"**Function:** {tool_call.get('function', {}).get('name', 'N/A')}")
+                            arguments = tool_call.get('function', {}).get('arguments', 'N/A')
+                            st.json(arguments, expanded=True)
+                    elif isinstance(message.get("content"), list) and len(message["content"]) > 1:
+                        st.write(f"**Function:** {message['content'][1].get('toolUse', {}).get('tool', 'N/A')}")
+                        arguments = message['content'][1].get('toolUse', {}).get('args', 'N/A')
                         st.json(arguments, expanded=True)
     else:
         st.info("No messages match the selected filter.")
