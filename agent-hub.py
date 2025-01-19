@@ -125,7 +125,7 @@ def generate_graph(history, scale=1.0):
         # Determine the role and label
         role = message.get('sl_role') or message.get('role', 'Output')
         
-        if role.lower() in ["system", "user"]:
+        if role.lower() == "system" or (role.lower() == "user" and (message.get("sl_role") or not isinstance(message.get("content"), list) or len(message.get("content", [])) <= 1)):
             graph.node(node_id,
                        label=f"{role.upper()}\nID: {i}",
                        shape="rectangle",
@@ -133,7 +133,7 @@ def generate_graph(history, scale=1.0):
                        fillcolor="#E3F2FD",
                        color="#1565C0")
             
-        elif role.lower() == "assistant":
+        if role.lower() == "assistant":
             for response in current_tool_responses:
                 graph.edge(response, node_id)
             current_tool_responses = []
