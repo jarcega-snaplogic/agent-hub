@@ -257,7 +257,7 @@ if st.session_state.selected_session:
             for tool_call in message["tool_calls"]:
                 tool_function_names[tool_call["id"]] = tool_call["function"]["name"]
 
-    # Replace the existing filtering logic with this updated version
+    # Updated filtering logic
     filtered_history = []
     selected_roles_lower = [role.lower() for role in selected_roles]
     for message in history:
@@ -271,17 +271,17 @@ if st.session_state.selected_session:
                     elif message.get("role", "").lower() == "user" and content[0].get("toolUse"):
                         tool_name = content[0].get("toolUse", {}).get("tool", "Unknown")
                         message["sl_role"] = f"TOOL ({tool_name})"
+                elif message.get("tool_calls"):
+                    message["sl_role"] = "assistant (tool call)"
 
-            # Existing filtering logic
+            # Improved filtering logic
             message_role = message.get("sl_role", message.get("role", "")).lower()
             
-            if message_role in selected_roles_lower:
+            if any(role in message_role for role in selected_roles_lower):
                 filtered_history.append(message)
-            elif message.get("sl_role") == "TOOL" and "tool" in selected_roles_lower:
+            elif "assistant" in selected_roles_lower and "tool" in message_role:
                 filtered_history.append(message)
-            elif message.get("sl_role") == "ERROR" and "error" in selected_roles_lower:
-                filtered_history.append(message)
-            elif message.get("tool_calls") and "tool" in selected_roles_lower and "assistant" in selected_roles_lower and message_role == "assistant":
+            elif message.get("tool_calls") and "assistant" in selected_roles_lower:
                 filtered_history.append(message)
 
     # Update the display logic
