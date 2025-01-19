@@ -40,8 +40,11 @@ def fetch_history(session_id):
             return history[0].get("messages", [])
     return []
 
-# Fetch the last 10 session IDs and agent names
-all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
+# Fetch distinct agent names
+agent_names = sorted(list(set(history_collection.distinct("agentName"))))
+
+# Fetch session IDs and agent names (up to 10 for initial display)
+all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10)) if not agent_names else []
 
 # Sidebar for database and session selection
 st.sidebar.header("Database and Session Selection")
@@ -70,16 +73,16 @@ def fetch_history(session_id):
     return []
 
 # Search boxes for session ID and agent name
+selected_agent = st.sidebar.selectbox("Filter by Agent Name", ["All"] + agent_names)
 search_session_id = st.sidebar.text_input("Search Session ID")
-search_agent_name = st.sidebar.text_input("Search Agent Name")
 
 # Fetch sessions based on search input or get the last 10
-if search_session_id:
+if selected_agent != "All":
+    all_sessions = list(history_collection.find({"agentName": selected_agent}, {"sessionId": 1, "agentName": 1, "_id": 0}))
+elif search_session_id:
     all_sessions = list(history_collection.find({"sessionId": search_session_id}, {"sessionId": 1, "agentName": 1, "_id": 0}))
-elif search_agent_name:
-    all_sessions = list(history_collection.find({"agentName": search_agent_name}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
 else:
-    all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10))
+    all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10)) if not agent_names else []
 
 # Display session IDs and agent names
 if all_sessions:
