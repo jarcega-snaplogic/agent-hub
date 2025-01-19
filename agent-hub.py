@@ -80,11 +80,11 @@ else:
 
 # Display session IDs and agent names
 if all_sessions:
-    for session_data in all_sessions:
+    for i, session_data in enumerate(all_sessions):
         session_id = session_data.get("sessionId")
         agent_name = session_data.get("agentName")
         session_label = f"{session_id} ({agent_name})" if agent_name else session_id
-        if st.sidebar.button(session_label, key=session_id):
+        if st.sidebar.button(session_label, key=f"{session_id}_{i}"):  # Unique key
             st.session_state.selected_session = session_id
 else:
     st.sidebar.info("No sessions found.")
