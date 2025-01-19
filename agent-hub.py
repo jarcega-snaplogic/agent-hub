@@ -297,12 +297,10 @@ if st.session_state.selected_session:
                     # Find the corresponding tool call in previous messages
                     tool_name = "Unknown"
                     for prev_message in filtered_history[:i]:
-                        if prev_message.get("tool_calls"):
-                            for tool_call in prev_message["tool_calls"]:
-                                if tool_call.get("id") == tool_use_id:
-                                    tool_name = tool_call["function"]["name"]
-                                    break
-                            if tool_name != "Unknown":
+                        if isinstance(prev_message.get("content"), list) and len(prev_message["content"]) > 1:
+                            tool_use = prev_message["content"][1].get("toolUse", {})
+                            if tool_use.get("toolUseId") == tool_use_id:
+                                tool_name = tool_use.get("name", "Unknown")
                                 break
                     display_title = f"Message {i + 1} - TOOL ({tool_name})"
                 else:
