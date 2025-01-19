@@ -33,19 +33,6 @@ client = MongoClient(MONGO_URI)
 db = client.get_database("audiobooks")
 history_collection = db.get_collection("Log")
 
-def fetch_history(session_id):
-    if session_id:
-        history = list(history_collection.find({"sessionId": session_id}).limit(1))
-        if history:
-            return history[0].get("messages", [])
-    return []
-
-# Fetch distinct agent names
-agent_names = sorted(list(set(history_collection.distinct("agentName"))))
-
-# Fetch session IDs and agent names (up to 10 for initial display)
-all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10)) if not agent_names else []
-
 # Sidebar for database and session selection
 st.sidebar.header("Database and Session Selection")
 
@@ -65,16 +52,23 @@ client = MongoClient(MONGO_URI)
 db = client.get_database(selected_database)
 history_collection = db.get_collection("Log")
 
+# Fetch distinct agent names
+agent_names = sorted(list(set(history_collection.distinct("agentName"))))
+
+# Fetch session IDs and agent names (up to 10 for initial display)
+all_sessions = list(history_collection.find({}, {"sessionId": 1, "agentName": 1, "_id": 0}).sort("_id", -1).limit(10)) if not agent_names else []
+
+
+# Search boxes for session ID and agent name
+selected_agent = st.sidebar.selectbox("Filter by Agent Name", ["All"] + agent_names)
+search_session_id = st.sidebar.text_input("Search Session ID")
+
 def fetch_history(session_id):
     if session_id:
         history = list(history_collection.find({"sessionId": session_id}).limit(1))
         if history:
             return history[0].get("messages", [])
     return []
-
-# Search boxes for session ID and agent name
-selected_agent = st.sidebar.selectbox("Filter by Agent Name", ["All"] + agent_names)
-search_session_id = st.sidebar.text_input("Search Session ID")
 
 # Fetch sessions based on search input or get the last 10
 if selected_agent != "All":
