@@ -125,7 +125,17 @@ def generate_graph(history, scale=1.0):
         # Determine the role and label
         role = message.get('sl_role') or message.get('role', 'Output')
         
-        if role.lower() == "system" or (role.lower() == "user" and (message.get("sl_role") or not isinstance(message.get("content"), list) or len(message.get("content", [])) <= 1)):
+        # Check if this is a tool response message
+        is_tool_response = (
+            role.lower().startswith("tool") or 
+            (role.lower() == "user" and 
+             isinstance(message.get("content"), list) and 
+             len(message.get("content", [])) > 0 and 
+             message["content"][0].get("toolResult"))
+        )
+        
+        # Only create node for system messages and genuine user messages (not tool responses)
+        if role.lower() == "system" or (role.lower() == "user" and not is_tool_response):
             graph.node(node_id,
                        label=f"{role.upper()}\nID: {i}",
                        shape="rectangle",
