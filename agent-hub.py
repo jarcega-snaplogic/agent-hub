@@ -111,15 +111,30 @@ def generate_graph(history, scale=1.0):
     )
 
     # Track nodes and relationships
-    last_assistant_node = None
     tool_nodes = {}
-    current_tool_responses = []
-    tool_names = {}  # Store tool names for each function ID
+    tool_response_map = {}  # Maps tool responses to their next assistant message
+    last_assistant_node = None
+    tool_names = {}
+    next_assistant_id = None
+
+    # First pass: identify assistant nodes and their IDs
+    assistant_nodes = {}
+    for i, message in enumerate(history):
+        if not isinstance(message, dict):
+            continue
+        msg_id = i + 1
+        if message.get('role', '').lower() == 'assistant':
+            assistant_nodes[msg_id] = f"message_{msg_id}"
+
+    # Get the next assistant ID for a given message ID
+    def get_next_assistant_id(current_id):
+        next_ids = [aid for aid in assistant_nodes.keys() if aid > current_id]
+        return min(next_ids) if next_ids else None
 
     for i, message in enumerate(history):
         if not isinstance(message, dict):
             continue
-        i = i+1
+        i = i + 1
         node_id = f"message_{i}"
         
         # Determine the role and label
@@ -137,17 +152,15 @@ def generate_graph(history, scale=1.0):
         # Only create node for system messages and genuine user messages (not tool responses)
         if role.lower() == "system" or (role.lower() == "user" and not is_tool_response):
             graph.node(node_id,
-                       label=f"{role.upper()}\nID: {i}",
-                       shape="rectangle",
-                       style="rounded,filled",
-                       fillcolor="#E3F2FD",
-                       color="#1565C0")
+                      label=f"{role.upper()}\nID: {i}",
+                      shape="rectangle",
+                      style="rounded,filled",
+                      fillcolor="#E3F2FD",
+                      color="#1565C0")
             
         if role.lower() == "assistant":
-            for response in current_tool_responses:
-                graph.edge(response, node_id)
-            current_tool_responses = []
-
+            next_assistant_id = get_next_assistant_id(i)
+            
             if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                 tool_calls_text = [f"Assistant\nID: {i}"]
                 if message.get("tool_calls"):
@@ -163,11 +176,11 @@ def generate_graph(history, scale=1.0):
                 label = f"Assistant\nID: {i}"
 
             graph.node(node_id,
-                       label=label,
-                       shape="rectangle",
-                       style="rounded,filled",
-                       fillcolor="#FFF3E0",
-                       color="#E65100")
+                      label=label,
+                      shape="rectangle",
+                      style="rounded,filled",
+                      fillcolor="#FFF3E0",
+                      color="#E65100")
             
             if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                 with graph.subgraph() as s:
@@ -178,42 +191,49 @@ def generate_graph(history, scale=1.0):
                             tool_node_id = f"tool_{tool_call['id']}"
                             tool_name = tool_call['function']['name']
                             s.node(tool_node_id,
-                                   label=f"{tool_name}\nID: {i+y}",
-                                   shape="hexagon",
-                                   style="filled",
-                                   fillcolor="#F3E5F5",
-                                   color="#6A1B9A")
+                                  label=f"{tool_name}\nID: {i+y}",
+                                  shape="hexagon",
+                                  style="filled",
+                                  fillcolor="#F3E5F5",
+                                  color="#6A1B9A")
                             graph.edge(node_id, tool_node_id)
-                            tool_nodes[tool_call['id']] = tool_node_id
+                            tool_nodes[tool_call['id']] = {
+                                'node_id': tool_node_id,
+                                'next_assistant': next_assistant_id
+                            }
                             y += 1
                     elif isinstance(message.get("content"), list) and len(message["content"]) > 1:
                         tool_use = message["content"][1].get("toolUse", {})
                         tool_node_id = f"tool_{tool_use.get('toolUseId', 'unknown')}"
                         tool_name = tool_use.get('name', 'Unknown')
                         s.node(tool_node_id,
-                               label=f"{tool_name}\nID: {i+y}",
-                               shape="hexagon",
-                               style="filled",
-                               fillcolor="#F3E5F5",
-                               color="#6A1B9A")
+                              label=f"{tool_name}\nID: {i+y}",
+                              shape="hexagon",
+                              style="filled",
+                              fillcolor="#F3E5F5",
+                              color="#6A1B9A")
                         graph.edge(node_id, tool_node_id)
-                        tool_nodes[tool_use.get('toolUseId', 'unknown')] = tool_node_id
+                        tool_nodes[tool_use.get('toolUseId', 'unknown')] = {
+                            'node_id': tool_node_id,
+                            'next_assistant': next_assistant_id
+                        }
 
             last_assistant_node = node_id
             
-        elif role.lower().startswith("tool"):
-            tool_name = role[5:-1] if role.lower().startswith("tool (") else "Unknown"
+        elif is_tool_response:
             if message.get("function_id") and message["function_id"] in tool_nodes:
-                current_tool_responses.append(tool_nodes[message["function_id"]])
+                tool_info = tool_nodes[message["function_id"]]
+                if tool_info['next_assistant']:
+                    next_assistant_node = f"message_{tool_info['next_assistant']}"
+                    graph.edge(tool_info['node_id'], next_assistant_node)
             elif isinstance(message.get("content"), list) and len(message["content"]) > 0:
                 tool_result = message["content"][0].get("toolResult", {})
                 tool_use_id = tool_result.get("toolUseId", "")
                 if tool_use_id in tool_nodes:
-                    current_tool_responses.append(tool_nodes[tool_use_id])
-
-    if current_tool_responses and last_assistant_node:
-        for response in current_tool_responses:
-            graph.edge(response, last_assistant_node)
+                    tool_info = tool_nodes[tool_use_id]
+                    if tool_info['next_assistant']:
+                        next_assistant_node = f"message_{tool_info['next_assistant']}"
+                        graph.edge(tool_info['node_id'], next_assistant_node)
 
     return graph, tool_names
 
