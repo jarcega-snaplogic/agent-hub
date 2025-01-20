@@ -131,6 +131,22 @@ def generate_graph(history, scale=1.0):
         next_ids = [aid for aid in assistant_nodes.keys() if aid > current_id]
         return min(next_ids) if next_ids else None
 
+    def is_error_message(message):
+        if message.get('role', '').lower() == 'error' or message.get('sl_role', '').lower() == 'error':
+            return True
+        if isinstance(message.get('content'), list) and len(message['content']) > 0:
+            tool_result = message['content'][0].get('toolResult', {})
+            return bool(tool_result.get('error'))
+        return False
+
+    def get_error_content(message):
+        if message.get('role', '').lower() == 'error' or message.get('sl_role', '').lower() == 'error':
+            return str(message.get('content', 'Unknown error'))
+        if isinstance(message.get('content'), list) and len(message['content']) > 0:
+            tool_result = message['content'][0].get('toolResult', {})
+            return str(tool_result.get('error', 'Unknown error'))
+        return 'Unknown error'
+
     for i, message in enumerate(history):
         if not isinstance(message, dict):
             continue
@@ -149,6 +165,22 @@ def generate_graph(history, scale=1.0):
              message["content"][0].get("toolResult"))
         )
         
+        # Handle error messages
+        if is_error_message(message):
+            error_content = get_error_content(message)
+            graph.node(node_id,
+                      label=f"ERROR\nID: {i}\n{error_content[:50]}...",  # Truncate long error messages
+                      shape="rectangle",
+                      style="filled",
+                      fillcolor="#FFEBEE",
+                      color="#B71C1C")
+            
+            # Connect error to previous tool or assistant node if exists
+            if last_assistant_node:
+                graph.edge(last_assistant_node, node_id)
+            
+            continue
+
         # Only create node for system messages and genuine user messages (not tool responses)
         if role.lower() == "system" or (role.lower() == "user" and not is_tool_response):
             graph.node(node_id,
