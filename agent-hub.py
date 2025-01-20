@@ -328,7 +328,7 @@ if st.session_state.selected_session:
             unsafe_allow_html=True,
         )
         
-        col1, col2, col3 = st.columns([1, 3, 1])
+        col1, col2, col3 = st.columns([1, 4, 1])
         with col2:
             st.graphviz_chart(graph, use_container_width=True)
 
