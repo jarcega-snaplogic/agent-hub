@@ -112,10 +112,11 @@ def generate_graph(history, scale=1.0):
 
     # Track nodes and relationships
     tool_nodes = {}
-    tool_response_map = {}  # Maps tool responses to their next assistant message
+    tool_response_map = {}
     last_assistant_node = None
     tool_names = {}
     next_assistant_id = None
+    current_tool_responses = []
 
     # First pass: identify assistant nodes and their IDs
     assistant_nodes = {}
@@ -162,7 +163,8 @@ def generate_graph(history, scale=1.0):
             (role.lower() == "user" and 
              isinstance(message.get("content"), list) and 
              len(message.get("content", [])) > 0 and 
-             message["content"][0].get("toolResult"))
+             message["content"][0].get("toolResult") and
+             not message["content"][0].get("toolResult", {}).get('error'))  # Not an error
         )
         
         # Handle error messages
@@ -170,14 +172,20 @@ def generate_graph(history, scale=1.0):
             error_content = get_error_content(message)
             graph.node(node_id,
                       label=f"ERROR\nID: {i}\n{error_content[:50]}...",  # Truncate long error messages
-                      shape="rectangle",
+                      shape="hexagon",  # Changed to hexagon
                       style="filled",
                       fillcolor="#FFEBEE",
                       color="#B71C1C")
             
-            # Connect error to previous tool or assistant node if exists
+            # Connect error to the last assistant node
             if last_assistant_node:
                 graph.edge(last_assistant_node, node_id)
+                
+            # If there's a next assistant, connect error to it
+            next_assistant_id = get_next_assistant_id(i)
+            if next_assistant_id:
+                next_assistant_node = f"message_{next_assistant_id}"
+                graph.edge(node_id, next_assistant_node)
             
             continue
 
