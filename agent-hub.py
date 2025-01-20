@@ -278,6 +278,21 @@ def generate_graph(history, scale=1.0):
 
     return graph, tool_names
 
+def get_max_concurrent_tools(history):
+    max_tools = 0
+    for message in history:
+        if isinstance(message, dict):
+            # Check standard tool calls
+            if message.get("tool_calls"):
+                max_tools = max(max_tools, len(message["tool_calls"]))
+            # Check snaplogic style tool calls
+            elif (isinstance(message.get("content"), list) and 
+                  len(message["content"]) > 1 and 
+                  isinstance(message["content"][1], dict) and
+                  message["content"][1].get("toolUse")):
+                max_tools = max(max_tools, 1)  # Count single tool use
+    return max(max_tools, 3)  # Minimum width of 3 for readability
+
 def get_graph_source(graph):
     """Get the DOT source code for the graph."""
     return graph.source
@@ -328,7 +343,9 @@ if st.session_state.selected_session:
             unsafe_allow_html=True,
         )
         
-        col1, col2, col3 = st.columns([1, 4, 1])
+        # Calculate dynamic middle column width based on max concurrent tools
+        middle_width = get_max_concurrent_tools(history)
+        col1, col2, col3 = st.columns([1, middle_width, 1])
         with col2:
             st.graphviz_chart(graph, use_container_width=True)
 
