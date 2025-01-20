@@ -112,11 +112,10 @@ def generate_graph(history, scale=1.0):
 
     # Track nodes and relationships
     tool_nodes = {}
-    tool_response_map = {}
-    last_assistant_node = None
+    last_node = None  # Track the last node of any type
     tool_names = {}
     next_assistant_id = None
-    current_tool_responses = []
+    current_tool_id = None  # Track the current tool node ID
 
     # First pass: identify assistant nodes and their IDs
     assistant_nodes = {}
@@ -170,23 +169,20 @@ def generate_graph(history, scale=1.0):
         # Handle error messages
         if is_error_message(message):
             error_content = get_error_content(message)
-            graph.node(node_id,
-                      label=f"ERROR\nID: {i}\n{error_content[:50]}...",  # Truncate long error messages
-                      shape="hexagon",  # Changed to hexagon
+            error_node_id = node_id
+            graph.node(error_node_id,
+                      label=f"ERROR\nID: {i}\n{error_content[:50]}...",
+                      shape="hexagon",
                       style="filled",
                       fillcolor="#FFEBEE",
                       color="#B71C1C")
             
-            # Connect error to the last assistant node
-            if last_assistant_node:
-                graph.edge(last_assistant_node, node_id)
-                
-            # If there's a next assistant, connect error to it
-            next_assistant_id = get_next_assistant_id(i)
-            if next_assistant_id:
-                next_assistant_node = f"message_{next_assistant_id}"
-                graph.edge(node_id, next_assistant_node)
+            # Connect error to the last node (whether it's a tool, assistant, or other)
+            if last_node:
+                graph.edge(last_node, error_node_id)
             
+            # Update last_node to be this error node
+            last_node = error_node_id
             continue
 
         # Only create node for system messages and genuine user messages (not tool responses)
@@ -197,6 +193,7 @@ def generate_graph(history, scale=1.0):
                       style="rounded,filled",
                       fillcolor="#E3F2FD",
                       color="#1565C0")
+            last_node = node_id
             
         if role.lower() == "assistant":
             next_assistant_id = get_next_assistant_id(i)
@@ -222,6 +219,8 @@ def generate_graph(history, scale=1.0):
                       fillcolor="#FFF3E0",
                       color="#E65100")
             
+            last_node = node_id
+            
             if message.get("tool_calls") or (isinstance(message.get("content"), list) and len(message["content"]) > 1 and message["content"][1].get("toolUse")):
                 with graph.subgraph() as s:
                     s.attr(rank='same')
@@ -241,6 +240,7 @@ def generate_graph(history, scale=1.0):
                                 'node_id': tool_node_id,
                                 'next_assistant': next_assistant_id
                             }
+                            last_node = tool_node_id  # Update last_node to this tool node
                             y += 1
                     elif isinstance(message.get("content"), list) and len(message["content"]) > 1:
                         tool_use = message["content"][1].get("toolUse", {})
@@ -257,12 +257,12 @@ def generate_graph(history, scale=1.0):
                             'node_id': tool_node_id,
                             'next_assistant': next_assistant_id
                         }
-
-            last_assistant_node = node_id
+                        last_node = tool_node_id  # Update last_node to this tool node
             
         elif is_tool_response:
             if message.get("function_id") and message["function_id"] in tool_nodes:
                 tool_info = tool_nodes[message["function_id"]]
+                last_node = tool_info['node_id']  # Update last_node to this tool node
                 if tool_info['next_assistant']:
                     next_assistant_node = f"message_{tool_info['next_assistant']}"
                     graph.edge(tool_info['node_id'], next_assistant_node)
@@ -271,6 +271,7 @@ def generate_graph(history, scale=1.0):
                 tool_use_id = tool_result.get("toolUseId", "")
                 if tool_use_id in tool_nodes:
                     tool_info = tool_nodes[tool_use_id]
+                    last_node = tool_info['node_id']  # Update last_node to this tool node
                     if tool_info['next_assistant']:
                         next_assistant_node = f"message_{tool_info['next_assistant']}"
                         graph.edge(tool_info['node_id'], next_assistant_node)
