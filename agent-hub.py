@@ -20,7 +20,7 @@ if 'filter_roles' not in st.session_state:
 def update_filter_roles():
     st.session_state.filter_roles = st.session_state.role_multiselect
 
-st.title("LLM Agent Hub")
+st.title("snapLogic Agent Flow")
 
 # Load environment variables
 load_dotenv()
